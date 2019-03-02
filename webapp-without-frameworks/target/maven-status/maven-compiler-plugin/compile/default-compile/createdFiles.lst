@@ -1,0 +1,16 @@
+com\budovyy\model\Product.class
+com\budovyy\service\CategoryService.class
+com\budovyy\service\ProductService.class
+com\budovyy\web\Request.class
+com\budovyy\model\Category.class
+com\budovyy\controller\LoginUserController.class
+com\budovyy\controller\LoginPageController.class
+com\budovyy\controller\GetAllCategoriesController.class
+com\budovyy\service\UserService.class
+com\budovyy\model\User.class
+com\budovyy\controller\GetProductController.class
+com\budovyy\web\ViewModel.class
+com\budovyy\web\Cookie.class
+com\budovyy\controller\GetCategoryByIdController.class
+com\budovyy\controller\Controller.class
+com\budovyy\Factory.class
