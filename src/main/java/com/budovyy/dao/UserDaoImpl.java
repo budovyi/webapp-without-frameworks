@@ -92,7 +92,7 @@ public class UserDaoImpl implements UserDao {
         return result;
     }
 
-    @Override  //TODO               THX to Evhen Khailuk for realizin this method =)
+    @Override
     public Optional<User> getByUsername(String username) {
         String query = "SELECT U.ID AS U_ID, " +
                 "U.USERNAME, " +
