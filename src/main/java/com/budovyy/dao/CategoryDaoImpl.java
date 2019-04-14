@@ -13,7 +13,7 @@ import java.util.List;
 
 public class CategoryDaoImpl   {
 
-    private final Connection connection;
+/*    private final Connection connection;
 
     public CategoryDaoImpl(Connection connection) {
         this.connection = connection;
@@ -81,5 +81,5 @@ public class CategoryDaoImpl   {
         String productDesc = resultSet.getString("P_DESC");
         double price = resultSet.getDouble("P_PRICE");
         return new Product(id, productName, productDesc, price);
-    }
+    }*/
 }

@@ -32,9 +32,9 @@ public class CategoryDao extends AbstractDao<Category, Long> {
 
         /*categoryDao.delete(1L);*/
 
-        Category category = new Category(3L, "TestCategory", "Desc");
+     /*   Category category = new Category(4L, "TestCategory", "Desc");
         Category c = categoryDao.update(category);
-        System.out.println(c);
+        System.out.println(c);*/
 
     }
 }

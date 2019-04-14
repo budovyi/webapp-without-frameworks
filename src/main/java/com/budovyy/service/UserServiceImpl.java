@@ -23,7 +23,7 @@ public class UserServiceImpl implements UserService {
 
         return u.map(User::getPassword)
                 .filter(p -> p.equals(sha256(user.getPassword())))
-                .flatMap(p -> u);  //temporary
+                .flatMap(p -> u);
     }
 
     @Override

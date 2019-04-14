@@ -12,7 +12,7 @@ import java.util.List;
 
 public abstract class AbstractDao<T, ID> implements GenericDao<T, ID> {
 
-    private Connection connection;
+    protected Connection connection;
 
     private Class clazz = getGenericClass();
     private String fullClassName = clazz.getName();
@@ -31,7 +31,7 @@ public abstract class AbstractDao<T, ID> implements GenericDao<T, ID> {
 
         // create table
         String query = getQueryForCreateTable();
-        executeUpdate(query);
+        executeUpdate(query, null);
 
         // adding  T  to created table
         sb.append("INSERT INTO ").append(clearClassName).append("S").append(" VALUES( ");
@@ -64,7 +64,7 @@ public abstract class AbstractDao<T, ID> implements GenericDao<T, ID> {
         // return T with set ID
         Long id = null;
         String insertQuery = sb.toString();
-        ResultSet resultSet = executeUpdate(insertQuery);
+        ResultSet resultSet = executeUpdate(insertQuery, t);
         try {
             if (resultSet.next()) {
                 id = resultSet.getLong(1);
@@ -85,7 +85,6 @@ public abstract class AbstractDao<T, ID> implements GenericDao<T, ID> {
         StringBuilder sb = new StringBuilder();
         sb.append("SELECT * FROM ").append(clearClassName).append("S")
                 .append(" WHERE ").append(symbol).append("_ID='").append(id).append("'");
-        PreparedStatement statement = connection.prepareStatement();
         ResultSet resultSet = executeQuery(sb.toString());
         return parseResultSet(resultSet).get(0);
     }
@@ -113,7 +112,6 @@ public abstract class AbstractDao<T, ID> implements GenericDao<T, ID> {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         for (Field field : c.getDeclaredFields()) {
             field.setAccessible(true);
             String fieldType = field.getAnnotatedType().getType().getTypeName()
@@ -126,35 +124,51 @@ public abstract class AbstractDao<T, ID> implements GenericDao<T, ID> {
                         query.append(", ");
                     }
                     query.append(symbol).append("_").append(field.getName().toUpperCase());
-
-                    String res = (String) field.get(t);
-                    query.append(" = '")
-                            .append(res).append("'");
+                    //String res = (String) field.get(t);
+                    /*query.append(" = '")
+                            .append(res).append("'");*/
+                    query.append(" = ?");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
         query.append(" where ").append(symbol).append("_ID = ").append(id);
-        executeUpdate( update + query.toString());
 
+        executeUpdate(update + query.toString(), t);
         return t;
     }
 
     @Override
     public void delete(ID id) {
         String query = "DELETE FROM " + clearClassName + "S WHERE " + symbol + "_ID=" + id;
-        executeUpdate(query);
+        executeUpdate(query, null);
     }
 
-    private ResultSet executeUpdate(String query) {
+    private ResultSet executeUpdate(String query, T t) {
         PreparedStatement statement;
         ResultSet resultSet = null;
+        Class clazz = t.getClass();
+        Field[] fields = clazz.getDeclaredFields();
+        String fieldType;
         try {
             statement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+
+            for (int i = 0; i < fields.length; i++) {
+                fields[i].setAccessible(true);
+                Object res = fields[i].get(t);
+                fieldType = fields[i].getAnnotatedType().getType().getTypeName()
+                        .replaceFirst("java.lang.", "");
+                isList = fieldType.matches("(.*)List(.*)");
+                boolean isId = fields[i].getName().equalsIgnoreCase("id");
+                if (!isList && !isId) {
+                    statement.setObject(i, res);
+                }
+            }
+
             statement.executeUpdate();
             resultSet = statement.getGeneratedKeys();
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return resultSet;
@@ -170,51 +184,6 @@ public abstract class AbstractDao<T, ID> implements GenericDao<T, ID> {
             e.printStackTrace();
         }
         return resultSet;
-    }
-
-    private List<String> getObjectFields() {
-        String fieldType;
-        List<String> list = new ArrayList<>();
-
-        for (Field field : clazz.getDeclaredFields()) {
-            field.setAccessible(true);
-            fieldType = field.getAnnotatedType().getType().getTypeName()
-                    .replaceFirst("java.lang.", "");
-
-            isList = fieldType.matches("(.*)List(.*)");
-            if (!isList) {
-                list.add(symbol + "_" + field.getName().toUpperCase());
-            }
-        }
-        return list;
-    }
-
-    private List<String> getObjectValues(T t) {
-        List<String> list = new ArrayList<>();
-        Class c = t.getClass();
-        String value = null;
-        for (Field field : c.getDeclaredFields()) {
-            field.setAccessible(true);
-
-            String fieldType = field.getAnnotatedType().getType().getTypeName()
-                    .replaceFirst("java.lang.", "");
-            isList = fieldType.matches("(.*)List(.*)");
-            if (!isList) {
-                if (field.getName().toUpperCase().equals("ID")) {
-                    value = null;
-                    list.add(value);
-                } else {
-                    try {
-                        value = String.valueOf(field.get(t));
-                        list.add(value);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-
-        }
-        return list;
     }
 
     // TODO      we save ID as Long

@@ -13,12 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class UserDaoImpl implements UserDao {
+public class UserDaoImpl extends AbstractDao<User, Long> implements UserDao {
 
-    private final Connection connection;
 
     public UserDaoImpl(Connection connection) {
-        this.connection = connection;
+        super(connection);
     }
 
     @Override
