@@ -13,12 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class UserDaoImpl implements UserDao {
+public class UserDaoImpl extends AbstractDao<User, Long> implements UserDao {
 
-    private final Connection connection;
 
     public UserDaoImpl(Connection connection) {
-        this.connection = connection;
+        super(connection);
     }
 
     @Override
@@ -92,7 +91,7 @@ public class UserDaoImpl implements UserDao {
         return result;
     }
 
-    @Override  //TODO               THX to Evhen Khailuk for realizin this method =)
+    @Override
     public Optional<User> getByUsername(String username) {
         String query = "SELECT U.ID AS U_ID, " +
                 "U.USERNAME, " +

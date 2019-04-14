@@ -12,12 +12,14 @@ import java.util.List;
 
 public abstract class AbstractDao<T, ID> implements GenericDao<T, ID> {
 
-    private Connection connection;
+    protected Connection connection;
 
     private Class clazz = getGenericClass();
     private String fullClassName = clazz.getName();
     private String clearClassName = getClearClassName(fullClassName);
     private char symbol = clearClassName.charAt(0);
+    private boolean isList;
+
 
     public AbstractDao(Connection connection) {
         this.connection = connection;
@@ -28,29 +30,26 @@ public abstract class AbstractDao<T, ID> implements GenericDao<T, ID> {
         StringBuilder sb = new StringBuilder();
 
         // create table
-        PreparedStatement statement;
         String query = getQueryForCreateTable();
-        try {
-            statement = connection.prepareStatement(query);
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        executeUpdate(query, null);
 
         // adding  T  to created table
         sb.append("INSERT INTO ").append(clearClassName).append("S").append(" VALUES( ");
 
         Class c = t.getClass();
+        String value = null;
+        String fieldType;
         for (Field field : c.getDeclaredFields()) {
             field.setAccessible(true);
-            String value = null;
+            fieldType = field.getAnnotatedType().getType().getTypeName()
+                    .replaceFirst("java.lang.", "");
+
             if (field.getName().toUpperCase().equals("ID")) {
                 value = null;
                 sb.append(value).append(", ");
             } else {
-                String fieldType = field.getAnnotatedType().getType().getTypeName()
-                        .replaceFirst("java.lang.", "");
-                if (!fieldType.equalsIgnoreCase("List")) {
+                isList = fieldType.matches("(.*)List(.*)");
+                if (!isList) {
                     try {
                         value = String.valueOf(field.get(t));
                         sb.append(" '").append(value).append("', ");
@@ -60,133 +59,198 @@ public abstract class AbstractDao<T, ID> implements GenericDao<T, ID> {
                 }
             }
         }
-        sb.append(")");
-
-
-
-
-
+        sb.append(");");
 
         // return T with set ID
-
-
-        Statement st;
+        Long id = null;
         String insertQuery = sb.toString();
-        ResultSet rs;
+        ResultSet resultSet = executeUpdate(insertQuery, t);
         try {
-            st = connection.createStatement();
-            st.executeUpdate(insertQuery);
-           // rs = st.executeQuery(insertQuery);
-
-
-            String selectQuery = "SELECT * FROM CATEGORYS WHERE C_ID='5'";  // temporary
-            rs = st.executeQuery(selectQuery);          // NEED TO CREATE SELECT QUERY FOR DB !!!!!!!!!!!!!
-
-            Long id = null;
-            System.out.println(rs);
-            if (rs.next()) {
-              id  = rs.getLong("C_ID");
+            if (resultSet.next()) {
+                id = resultSet.getLong(1);
             }
-            System.out.println(id);
 
             Field field = c.getDeclaredField("id");
             field.setAccessible(true);
-            field.set(t, rs.getLong("C_ID")); // temporary C_ID, should change to flexible variant
-
+            field.set(t, id);
 
         } catch (SQLException | NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
         }
-        System.out.println(t);
         return t;
     }
 
-    @Override  //TODO        some troubles in parseResultSet
+    @Override
     public T getById(ID id) {
         StringBuilder sb = new StringBuilder();
         sb.append("SELECT * FROM ").append(clearClassName).append("S")
-                .append(" WHERE ").append(symbol).append("_").append("ID='").append(id).append("'");
-        PreparedStatement statement;
-        ResultSet resultSet;
-        T t = null;
-        try {
-            statement = connection.prepareStatement(sb.toString());
-            resultSet = statement.executeQuery();
-            t = parseResultSet(resultSet).get(0);
-        } catch (SQLException | InstantiationException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-        return t;
+                .append(" WHERE ").append(symbol).append("_ID='").append(id).append("'");
+        ResultSet resultSet = executeQuery(sb.toString());
+        return parseResultSet(resultSet).get(0);
     }
 
     @Override
     public List<T> getAll() {
-        List<T> list = null;
-        String query =  "SELECT * FROM " + clearClassName + "S";
-        try  {
-            PreparedStatement statement = connection.prepareStatement(query);
-            ResultSet rs = statement.executeQuery();
-            list = parseResultSet(rs);
-        } catch (SQLException | InstantiationException | IllegalAccessException e) {
-            e.printStackTrace();
-        }
-        return list;
+        String query = "SELECT * FROM " + clearClassName + "S";
+        ResultSet rs = executeQuery(query);
+        return parseResultSet(rs);
     }
 
     @Override
     public T update(T t) {
-        return null;
+        String update = "UPDATE " + clearClassName + "S SET ";
+        StringBuilder query = new StringBuilder();
+        Class c = t.getClass();
+        Long id = null;
+
+        try {
+            Field f = c.getDeclaredField("id");
+            f.setAccessible(true);
+            id = (Long) f.get(t);
+            f.set(t, id);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        for (Field field : c.getDeclaredFields()) {
+            field.setAccessible(true);
+            String fieldType = field.getAnnotatedType().getType().getTypeName()
+                    .replaceFirst("java.lang.", "");
+            isList = fieldType.matches("(.*)List(.*)");
+
+            try {
+                if (!isList && !field.getName().equalsIgnoreCase("ID")) {
+                    if (0 != query.length()) {
+                        query.append(", ");
+                    }
+                    query.append(symbol).append("_").append(field.getName().toUpperCase());
+                    //String res = (String) field.get(t);
+                    /*query.append(" = '")
+                            .append(res).append("'");*/
+                    query.append(" = ?");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        query.append(" where ").append(symbol).append("_ID = ").append(id);
+
+        executeUpdate(update + query.toString(), t);
+        return t;
     }
 
     @Override
     public void delete(ID id) {
+        String query = "DELETE FROM " + clearClassName + "S WHERE " + symbol + "_ID=" + id;
+        executeUpdate(query, null);
     }
 
+    private ResultSet executeUpdate(String query, T t) {
+        PreparedStatement statement;
+        ResultSet resultSet = null;
+        Class clazz = t.getClass();
+        Field[] fields = clazz.getDeclaredFields();
+        String fieldType;
+        try {
+            statement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
 
-    // TODO         save Long or int like a String to DB
+            for (int i = 0; i < fields.length; i++) {
+                fields[i].setAccessible(true);
+                Object res = fields[i].get(t);
+                fieldType = fields[i].getAnnotatedType().getType().getTypeName()
+                        .replaceFirst("java.lang.", "");
+                isList = fieldType.matches("(.*)List(.*)");
+                boolean isId = fields[i].getName().equalsIgnoreCase("id");
+                if (!isList && !isId) {
+                    statement.setObject(i, res);
+                }
+            }
+
+            statement.executeUpdate();
+            resultSet = statement.getGeneratedKeys();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return resultSet;
+    }
+
+    private ResultSet executeQuery(String query) {
+        ResultSet resultSet = null;
+        PreparedStatement statement;
+        try {
+            statement = connection.prepareStatement(query);
+            resultSet = statement.executeQuery();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return resultSet;
+    }
+
+    // TODO      we save ID as Long
     private String getQueryForCreateTable() {
         StringBuilder sb = new StringBuilder();
-        String fieldType;
-        sb.append( " IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES  WHERE TABLE_NAME = N'").append(clearClassName).append("S").append("')   BEGIN END  ELSE    BEGIN  CREATE TABLE ")
+        sb.append("CREATE TABLE IF NOT EXISTS ")
                 .append(clearClassName).append("S").append(" ( ");
+
+
+        String fieldType;
 
         for (Field field : clazz.getDeclaredFields()) {
             field.setAccessible(true);
             fieldType = field.getAnnotatedType().getType().getTypeName()
-                    .replaceFirst("java.lang.", "").toUpperCase();
-
-            if (field.getName().toUpperCase().equals("ID") ||
-                    fieldType.equals("INT") ||
-                    fieldType.equals("LONG")) {
-                sb.append(symbol).append("_").append("ID BIGINT PRIMARY KEY AUTO_INCREMENT, ");
-            } else {
-                sb.append(symbol).append("_").append(field.getName()).append(" VARCHAR(255) NOT NULL, ");
+                    .replaceFirst("java.lang.", "");
+            isList = fieldType.matches("(.*)List(.*)");
+            if (!isList) {
+                if (field.getName().equalsIgnoreCase("ID")) {
+                    sb.append(symbol).append("_").append("ID BIGINT PRIMARY KEY AUTO_INCREMENT, ");
+                } else if (fieldType.equalsIgnoreCase("INT") ||
+                        fieldType.equalsIgnoreCase("LONG")) {
+                    sb.append(symbol).append("_").append("ID BIGINT PRIMARY KEY AUTO_INCREMENT, ");
+                } else {
+                    sb.append(symbol).append("_").append(field.getName()).append(" VARCHAR(255) NOT NULL, ");
+                }
             }
         }
-        sb.append(" )    End  ");
+        sb.append(" );");
         return sb.toString();
     }
 
-    // TODO     change rs.getLong to rs.getString coz we have ID id, not Long id
-    // TODO     OR  !!!! change rs.getLong to check a type of field and the set Long or String
-    // TODO     IF util.List ->  should create another Obj-s and set a values
-    private List<T> parseResultSet(ResultSet rs) throws SQLException, InstantiationException, IllegalAccessException   {
+    // TODO      we always expect an ID as Long
+    private List<T> parseResultSet(ResultSet rs) {
         List<T> list = new ArrayList<>();
-        while (rs.next()) {
-            T clz = (T)  getGenericClass().newInstance();
-            Class<?> c = clz.getClass();  //   Class<?> c ???
+        try {
+            while (rs.next()) {
+                T clz = (T) getGenericClass().newInstance();
+                Class<?> c = clz.getClass();  //   Class<?> c ???
 
-            Field field;
-            field = c.getDeclaredFields()[0];
-            field.setAccessible(true);
-            field.set(clz, rs.getLong("C_ID"));      // temporary
+                Field field = null;
+                String getStr;
+                String fieldType;
+                Field[] fields = c.getDeclaredFields();
+                System.out.println(fields);
 
-            for (int i = 1; c.getDeclaredFields().length > i; i++) {
-                field = c.getDeclaredFields()[i];
-                field.setAccessible(true);
-                field.set(clz, rs.getString(i + 1));
+                for (int i = 0; fields.length > i; i++) {
+                    field = fields[i];
+                    field.setAccessible(true);
+                    fieldType = field.getAnnotatedType().getType().getTypeName()
+                            .replaceFirst("java.lang.", "");
+
+                    isList = fieldType.matches("(.*)List(.*)");
+                    if (!isList) {
+                        if (fieldType.equalsIgnoreCase("Long")) {
+
+
+                            field.set(clz, rs.getLong(symbol + "_ID"));
+                        } else {
+                            getStr = rs.getString(i + 1);
+                            field.set(clz, getStr);
+                        }
+                    }
+                }
+                list.add(clz);
             }
-            list.add(clz);
+        } catch (IllegalAccessException | SQLException | InstantiationException e) {
+            e.printStackTrace();
         }
         return list;
     }
@@ -205,7 +269,7 @@ public abstract class AbstractDao<T, ID> implements GenericDao<T, ID> {
 
     public Class getGenericClass() {
         Class<T> persistentClass = (Class<T>)
-                ((ParameterizedType)getClass().getGenericSuperclass())
+                ((ParameterizedType) getClass().getGenericSuperclass())
                         .getActualTypeArguments()[0];
         return persistentClass;
     }
