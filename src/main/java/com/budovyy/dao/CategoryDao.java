@@ -2,10 +2,14 @@ package com.budovyy.dao;
 
 import com.budovyy.Factory;
 import com.budovyy.model.Category;
+import com.budovyy.model.Product;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.List;
+
+import static com.budovyy.Factory.*;
 
 public class CategoryDao extends AbstractDao<Category, Long> {
 
@@ -13,10 +17,20 @@ public class CategoryDao extends AbstractDao<Category, Long> {
         super(connection);
     }
 
+    public Category getCategoryById(Long id) {
+        Category category = getById(id);
+        List<Product> products = getProductDao(connection).getProductsByCategoryId(id);
 
-    public static void main(String[] args) {
+        category.setProducts(products);
+        return category;
+    }
+
+
+
+
+   /* public static void main(String[] args) {
         CategoryDao categoryDao = new CategoryDao(Factory.getConnection());
-
+*/
         /*Category  c = categoryDao.create(new Category(-1L, "Bubbles", "WE DID IT!)"));
         System.out.println(c);
 */
@@ -36,7 +50,7 @@ public class CategoryDao extends AbstractDao<Category, Long> {
         Category c = categoryDao.update(category);
         System.out.println(c);*/
 
-    }
+    //}
 }
 
 

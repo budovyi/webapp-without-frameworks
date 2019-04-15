@@ -2,6 +2,7 @@ package com.budovyy;
 
 import com.budovyy.controller.*;
 import com.budovyy.dao.CategoryDao;
+import com.budovyy.dao.ProductDao;
 import com.budovyy.dao.UserDao;
 import com.budovyy.dao.UserDaoImpl;
 import com.budovyy.service.*;
@@ -17,7 +18,7 @@ public class Factory {
     static {
         try {
             Class.forName("org.h2.Driver");
-            connection = DriverManager.getConnection("jdbc:h2:tcp://localhost/~/test-db2",
+            connection = DriverManager.getConnection("jdbc:h2:tcp://localhost/~/test-db3",
                     "sa", "");
         } catch (ClassNotFoundException  |SQLException e) {
             e.printStackTrace();
@@ -59,8 +60,8 @@ public class Factory {
        return new GetProductController(productService);
     }
 
-    public static ProductService getProductService() {
-        return new ProductServiceImpl();
+    public static ProductService getProductService(ProductDao productDao) {
+        return new ProductServiceImpl(productDao);
     }
 
     public static UserDao getUserDao(Connection connection) {
@@ -69,5 +70,9 @@ public class Factory {
 
     public static CategoryDao getCategoryDao(Connection connection) {
         return new CategoryDao(connection);
+    }
+
+    public static ProductDao getProductDao(Connection connection) {
+        return new ProductDao(connection);
     }
 }

@@ -224,7 +224,7 @@ public abstract class AbstractDao<T, ID> implements GenericDao<T, ID> {
                 Class<?> c = clz.getClass();  //   Class<?> c ???
 
                 Field field = null;
-                String getStr;
+                Object getObj;
                 String fieldType;
                 Field[] fields = c.getDeclaredFields();
                 System.out.println(fields);
@@ -242,8 +242,8 @@ public abstract class AbstractDao<T, ID> implements GenericDao<T, ID> {
 
                             field.set(clz, rs.getLong(symbol + "_ID"));
                         } else {
-                            getStr = rs.getString(i + 1);
-                            field.set(clz, getStr);
+                            getObj = rs.getObject(i + 1);
+                            field.set(clz, getObj);
                         }
                     }
                 }
