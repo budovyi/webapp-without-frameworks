@@ -25,7 +25,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public Optional<Category> getById(Long id) {
         ident = id;
-        return Optional.ofNullable(categoryDao.getById(id));
+        return Optional.ofNullable(categoryDao.getCategoryById(id));
     }
 
     public static Long getId() {
