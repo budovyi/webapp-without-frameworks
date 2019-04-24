@@ -11,16 +11,30 @@
 
     <servlet-mapping>
         <servlet-name>MainServlet</servlet-name>
-        <url-pattern>/servlet/*</url-pattern>
+    <url-pattern>/servlet/*</url-pattern>
     </servlet-mapping>
 
     <filter>
-        <filter-name>UserName</filter-name>
+        <filter-name>AdminFilter</filter-name>
+        <filter-class>com.budovyy.web.AdminFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>AdminFilter</filter-name>
+        <servlet-name>MainServlet</servlet-name>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>UserFilter</filter-name>
         <filter-class>com.budovyy.web.UserFilter</filter-class>
     </filter>
 
     <filter-mapping>
-        <filter-name>UserName</filter-name>
+        <filter-name>UserFilter</filter-name>
         <servlet-name>MainServlet</servlet-name>
     </filter-mapping>
+
+    <session-config>
+        <tracking-mode>COOKIE</tracking-mode>
+    </session-config>
 </web-app>

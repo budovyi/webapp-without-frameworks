@@ -1,6 +1,9 @@
 package com.budovyy;
 
 import com.budovyy.controller.*;
+import com.budovyy.dao.CategoryDao;
+import com.budovyy.dao.UserDao;
+import com.budovyy.dao.UserDaoImpl;
 import com.budovyy.service.*;
 
 import java.sql.Connection;
@@ -19,8 +22,6 @@ public class Factory {
         } catch (ClassNotFoundException  |SQLException e) {
             e.printStackTrace();
         }
-
-
     }
 
     public static Connection getConnection() {
@@ -41,12 +42,12 @@ public class Factory {
     }
 
 
-    public static UserService getUserServiceImpl() {
-        return new UserServiceImpl();
+    public static UserService getUserServiceImpl(UserDao userDao) {
+        return new UserServiceImpl(userDao);
     }
 
-    public static CategoryService getCategoryService () {
-        return new CategoryServiceImpl();
+    public static CategoryService getCategoryService (CategoryDao categoryDao) {
+        return new CategoryServiceImpl(categoryDao);
     }
 
     public static GetCategoryByIdController getCategoryByIdController(CategoryService categoryService) {
@@ -62,4 +63,11 @@ public class Factory {
         return new ProductServiceImpl();
     }
 
+    public static UserDao getUserDao(Connection connection) {
+        return new UserDaoImpl(connection);
+    }
+
+    public static CategoryDao getCategoryDao(Connection connection) {
+        return new CategoryDao(connection);
+    }
 }

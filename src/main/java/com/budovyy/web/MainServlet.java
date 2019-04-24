@@ -20,10 +20,11 @@ public class MainServlet extends HttpServlet {
 
     static {
         controllerMap.put(Request.of("GET", "/servlet/login"), getLoginPageController()); // , r -> ViewModel.of("login");
-        controllerMap.put(Request.of("POST", "/servlet/login"), getLoginUserController(getUserServiceImpl()));
-        controllerMap.put(Request.of("GET", "/servlet/categories"), getAllCategoriesController(getCategoryService()));
-        controllerMap.put(Request.of("GET", "/servlet/category"), getCategoryByIdController(getCategoryService()));
+        controllerMap.put(Request.of("POST", "/servlet/login"), getLoginUserController(getUserServiceImpl(getUserDao(getConnection()))));
+        controllerMap.put(Request.of("GET", "/servlet/categories"), getAllCategoriesController(getCategoryService(getCategoryDao(getConnection()))));
+        controllerMap.put(Request.of("GET", "/servlet/category"), getCategoryByIdController(getCategoryService(getCategoryDao(getConnection()))));
         controllerMap.put(Request.of("GET","/servlet/product"), getProductController(getProductService()));
+        controllerMap.put(Request.of("GET", "/servlet/admin"), r -> ViewModel.of("admin"));
     }
 
     @Override

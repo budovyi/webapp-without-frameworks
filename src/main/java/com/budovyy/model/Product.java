@@ -1,18 +1,19 @@
 package com.budovyy.model;
 
 public class Product {
-
-
-    private static Long categoryId;
+    private Long id;
+    //private static Long categoryId;   // or field group
     private String productName;
     private String description;
     private double price;
 
-    public Product(String productName, String description, double price) {
+    public Product(Long id, String productName, String description, double price) {
+        this.id = id;
         this.productName = productName;
         this.description = description;
         this.price = price;
     }
+
 
     public String getProductName() {
         return productName;
@@ -38,11 +39,11 @@ public class Product {
         this.price = price;
     }
 
-    public static Long getCategoryId() {
-        return categoryId;
-    }
-
-    public void setCategoryId(Long categoryId) {
-        this.categoryId = categoryId;
-    }
+//    public static Long getCategoryId() {
+//        return categoryId;
+//    }
+//
+//    public void setCategoryId(Long categoryId) {
+//        this.categoryId = categoryId;
+//    }
 }

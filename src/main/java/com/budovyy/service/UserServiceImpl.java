@@ -1,6 +1,7 @@
 package com.budovyy.service;
 
 import com.budovyy.DBEmulator;
+import com.budovyy.dao.UserDao;
 import com.budovyy.model.User;
 
 import java.nio.charset.StandardCharsets;
@@ -10,17 +11,15 @@ import java.util.UUID;
 
 public class UserServiceImpl implements UserService {
 
+    private final UserDao userDao;
+
+    public UserServiceImpl(UserDao userDao) {
+        this.userDao = userDao;
+    }
+
     @Override
     public Optional<User> authorize(User user) {
-        Optional<User> u = DBEmulator.getUsers().stream()
-                .filter(r -> r.getUsername().equals(user.getUsername()))
-                .findFirst();
-
-        /*if (u.isPresent()) {
-            if(u.get().getPassword().equals(sha256(user.getPassword()))) {
-                return u;
-            }
-        }*/
+        Optional<User> u = userDao.getByUsername(user.getUsername());
 
         return u.map(User::getPassword)
                 .filter(p -> p.equals(sha256(user.getPassword())))
@@ -32,15 +31,13 @@ public class UserServiceImpl implements UserService {
         String hashedPassword = sha256(user.getPassword());
         user.setPassword(hashedPassword);
         user.setToken(generateToken());
-        DBEmulator.addUser(user);
-        return Optional.of(user);
+
+        return Optional.ofNullable(userDao.addUser(user));
     }
 
     @Override
     public Optional<User> findByToken(String token) {
-        return DBEmulator.getUsers().stream()
-                .filter(u -> u.getToken().equals(token))
-                .findFirst();
+        return Optional.ofNullable(userDao.getByToken(token));
     }
 
     public static String sha256(String base) {

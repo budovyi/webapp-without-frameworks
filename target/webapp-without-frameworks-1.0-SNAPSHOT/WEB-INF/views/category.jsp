@@ -19,7 +19,7 @@
     <header>
         <button><a href="<c:url value="/servlet/logout"/>">logout</a></button>
     </header>
-    <h3>Category name: <c:out value="${category.categoryName}"/></h3>
+    <h3>Category productName: <c:out value="${category.productName}"/></h3>
     <p>Description: <c:out value="${category.description}"/></p>
     <c:forEach items="${category.products}" var="p">
 

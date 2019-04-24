@@ -1,5 +1,8 @@
 package com.budovyy.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class User {
 
     private Long id;
@@ -8,6 +11,7 @@ public class User {
     private String token;       //for future needs
     private String firstName;
     private String lastName;
+    private List<Role> roles = new ArrayList<>();
 
 
     //"Lombok" read about it
@@ -18,6 +22,7 @@ public class User {
         this.token = token;
         this.firstName = firstName;
         this.lastName = lastName;
+
     }
 
     public User(String username, String password) {
@@ -75,5 +80,13 @@ public class User {
 
     public static User of(String username, String password) {
         return new User(username, password);
+    }
+
+    public List<Role> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<Role> roles) {
+        this.roles = roles;
     }
 }
